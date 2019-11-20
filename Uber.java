@@ -5,12 +5,17 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.hadoop.mapred.FileOutputFormat;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.map.MultithreadedMapper;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.*;
-
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -19,73 +24,125 @@ import java.io.IOException;
 import org.apache.hadoop.mapred.OutputCollector;
 import java.util.*;
 
-class TokenizerMapper
-        extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable>{
+class monthlyMR {
 
-  private final static IntWritable one = new IntWritable(1);
-  private Text word = new Text();
+  static class TokenizerMapper extends Mapper<LongWritable, Text, Text, IntWritable> {
 
-  @Override
-  public void map(LongWritable key, Text value, OutputCollector <Text, IntWritable> output, Reporter reporter) throws IOException {
+    private final IntWritable one = new IntWritable(1);
+    private Text word = new Text();
 
-    String valueString = value.toString();
-    String[] SingleCountryData = valueString.split(",");
-    output.collect(new Text(SingleCountryData[0]), one);
-  }
-}
+    @Override
+    public void map(LongWritable key, Text value, Context output) throws IOException, InterruptedException {
 
-class IntSumReducer
-        extends MapReduceBase implements Reducer<Text,IntWritable,Text,IntWritable> {
-  private IntWritable result = new IntWritable();
-
-  @Override
-  public void reduce(Text key, Iterator<IntWritable> values, OutputCollector<Text,IntWritable> output, Reporter reporter) throws IOException {
-    int sum = 0;
-    while (values.hasNext()) {
-      IntWritable value = (IntWritable) values.next();
-      sum += value.get();
+      String valueString = value.toString();
+      String[] SingleCountryData = valueString.split(",");
+      String[] dateAndTime = SingleCountryData[0].split(" ");
+      output.write(new Text(dateAndTime[0]), one);
     }
-    result.set(sum);
-    output.collect(key, result);
+  }
+
+  static class IntSumReducer
+          extends Reducer<Text, IntWritable, Text, IntWritable> {
+    private IntWritable result = new IntWritable();
+
+    @Override
+    public void reduce(Text key, Iterable<IntWritable> values, Context output) throws IOException, InterruptedException {
+      int sum = 0;
+      for(IntWritable value : values) {
+        sum += value.get();
+      }
+      result.set(sum);
+      output.write(key, result);
+    }
   }
 }
+
+
+class hourlyMR {
+
+  static class TokenizerMapper extends Mapper<LongWritable, Text, Text, IntWritable> {
+
+    private final IntWritable one = new IntWritable(1);
+    private Text word = new Text();
+
+    @Override
+    public void map(LongWritable key, Text value, Context output) throws IOException, InterruptedException {
+
+      String valueString = value.toString();
+      String[] SingleCountryData = valueString.split(",");
+      String[] dateAndTime = SingleCountryData[0].split(" ");
+      if(dateAndTime.length > 1) {
+        String[] hhmmss = dateAndTime[1].split(":");
+        output.write(new Text(hhmmss[0]), one);
+      }
+
+      // The if statement because the column names also come in the output
+    }
+  }
+
+  static class IntSumReducer
+          extends Reducer<Text, IntWritable, Text, IntWritable> {
+    private IntWritable result = new IntWritable();
+
+    @Override
+    public void reduce(Text key, Iterable<IntWritable> values, Context output) throws IOException, InterruptedException {
+      int sum = 0;
+      for(IntWritable value : values) {
+        sum += value.get();
+      }
+      result.set(sum);
+      output.write(key, result);
+    }
+  }
+}
+
 
 public class Uber {
  
   public static void main(String[] args) throws Exception {
 
 
-    JobClient my_client = new JobClient();
-    // Create a configuration object for the job
-    JobConf job_conf = new JobConf(Uber.class);
+    Job job = new Job();
+    job.setJarByClass(Uber.class);
 
-    // Set a name of the Job
-    job_conf.setJobName("uber data analysis");
+    FileInputFormat.addInputPath(job, new Path(args[0]));
+    FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
-    // Specify data type of output key and value
-    job_conf.setOutputKeyClass(Text.class);
-    job_conf.setOutputValueClass(IntWritable.class);
+//    MultithreadedMapper.setMapperClass(job, monthlyMR.TokenizerMapper.class);
+//    MultithreadedMapper.setNumberOfThreads(job, 10);
+//
+//    job.setMapperClass(monthlyMR.TokenizerMapper.class);
+//    job.setCombinerClass(monthlyMR.IntSumReducer.class);
+//    job.setReducerClass(monthlyMR.IntSumReducer.class);
+//
+//    job.setOutputKeyClass(Text.class);
+//    job.setOutputValueClass(IntWritable.class);
+//
+//    /* begin defaults */
+//    job.setInputFormatClass(TextInputFormat.class);
+//    job.setOutputFormatClass(TextOutputFormat.class);
+//    /* end defaults */
+//
+//    job.waitForCompletion(true);
+//
 
-    // Specify names of Mapper and Reducer Class
-    job_conf.setMapperClass(TokenizerMapper.class);
-    job_conf.setReducerClass(IntSumReducer.class);
+    //    For hourly map reducer
 
-    // Specify formats of the data type of Input and output
-    job_conf.setInputFormat(TextInputFormat.class);
-    job_conf.setOutputFormat(TextOutputFormat.class);
+    MultithreadedMapper.setMapperClass(job, hourlyMR.TokenizerMapper.class);
+    MultithreadedMapper.setNumberOfThreads(job, 1);
 
-    // Set input and output directories using command line arguments,
-    //arg[0] = name of input directory on HDFS, and arg[1] =  name of output directory to be created to store the output file.
+    job.setMapperClass(hourlyMR.TokenizerMapper.class);
+    job.setCombinerClass(hourlyMR.IntSumReducer.class);
+    job.setReducerClass(hourlyMR.IntSumReducer.class);
 
-    FileInputFormat.setInputPaths(job_conf, new Path(args[0]));
-    FileOutputFormat.setOutputPath(job_conf, new Path(args[1]));
+    job.setOutputKeyClass(Text.class);
+    job.setOutputValueClass(IntWritable.class);
 
-    my_client.setConf(job_conf);
-    try {
-      // Run the job
-      JobClient.runJob(job_conf);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    /* begin defaults */
+    job.setInputFormatClass(TextInputFormat.class);
+    job.setOutputFormatClass(TextOutputFormat.class);
+    /* end defaults */
+
+    job.waitForCompletion(true);
   }
 }
