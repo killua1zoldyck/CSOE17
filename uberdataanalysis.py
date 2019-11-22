@@ -6,13 +6,30 @@ import csv
 x = []
 y = []
 
-with open('testdate.txt','r') as csvfile:
-    plots = csv.reader(csvfile, delimiter='\t')
-    print "HERE"
-    for row in plots:
+def func(x): 
+    a=x.split()
+    b=a[0].split('/')
+    print b[1]
+    return int(b[1])
+
+f = open("september.txt","r")
+if f.mode == 'r':
+    f1 = f.readlines()
+
+f1 = sorted(f1, key=func)
+for line in f1:
+        row = line.split()
         print row[0]
         x.append(str(row[0]))
         y.append(float(row[1]))
+
+# with open('testdate.txt','r') as csvfile:
+#     plots = csv.reader(csvfile, delimiter='\t')
+#     print "HERE"
+#     for row in plots:
+#         print row[0]
+#         x.append(str(row[0]))
+#         y.append(float(row[1]))
 
 plt.xticks(rotation='vertical')
 plt.bar(x,y)
@@ -24,6 +41,6 @@ repr(x)
 plt.legend()
 plt.show()
 
-plt.savefig('September.png',bbox_inches='tight')
+plt.savefig('test.png',bbox_inches='tight')
 
 print "END"
