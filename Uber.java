@@ -108,41 +108,41 @@ public class Uber {
     FileInputFormat.addInputPath(job, new Path(args[0]));
     FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
-//    MultithreadedMapper.setMapperClass(job, monthlyMR.TokenizerMapper.class);
-//    MultithreadedMapper.setNumberOfThreads(job, 10);
-//
-//    job.setMapperClass(monthlyMR.TokenizerMapper.class);
-//    job.setCombinerClass(monthlyMR.IntSumReducer.class);
-//    job.setReducerClass(monthlyMR.IntSumReducer.class);
-//
-//    job.setOutputKeyClass(Text.class);
-//    job.setOutputValueClass(IntWritable.class);
-//
-//    /* begin defaults */
-//    job.setInputFormatClass(TextInputFormat.class);
-//    job.setOutputFormatClass(TextOutputFormat.class);
-//    /* end defaults */
-//
-//    job.waitForCompletion(true);
-//
+   MultithreadedMapper.setMapperClass(job, monthlyMR.TokenizerMapper.class);
+   MultithreadedMapper.setNumberOfThreads(job, 10);
+
+   job.setMapperClass(monthlyMR.TokenizerMapper.class);
+   job.setCombinerClass(monthlyMR.IntSumReducer.class);
+   job.setReducerClass(monthlyMR.IntSumReducer.class);
+
+   job.setOutputKeyClass(Text.class);
+   job.setOutputValueClass(IntWritable.class);
+
+   /* begin defaults */
+   job.setInputFormatClass(TextInputFormat.class);
+   job.setOutputFormatClass(TextOutputFormat.class);
+   /* end defaults */
+
+   job.waitForCompletion(true);
+
 
     //    For hourly map reducer
 
-    MultithreadedMapper.setMapperClass(job, hourlyMR.TokenizerMapper.class);
-    MultithreadedMapper.setNumberOfThreads(job, 1);
+//     MultithreadedMapper.setMapperClass(job, hourlyMR.TokenizerMapper.class);
+//     MultithreadedMapper.setNumberOfThreads(job, 1);
 
-    job.setMapperClass(hourlyMR.TokenizerMapper.class);
-    job.setCombinerClass(hourlyMR.IntSumReducer.class);
-    job.setReducerClass(hourlyMR.IntSumReducer.class);
+//     job.setMapperClass(hourlyMR.TokenizerMapper.class);
+//     job.setCombinerClass(hourlyMR.IntSumReducer.class);
+//     job.setReducerClass(hourlyMR.IntSumReducer.class);
 
-    job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(IntWritable.class);
+//     job.setOutputKeyClass(Text.class);
+//     job.setOutputValueClass(IntWritable.class);
 
-    /* begin defaults */
-    job.setInputFormatClass(TextInputFormat.class);
-    job.setOutputFormatClass(TextOutputFormat.class);
-    /* end defaults */
+//     /* begin defaults */
+//     job.setInputFormatClass(TextInputFormat.class);
+//     job.setOutputFormatClass(TextOutputFormat.class);
+//     /* end defaults */
 
-    job.waitForCompletion(true);
+//     job.waitForCompletion(true);
   }
 }
